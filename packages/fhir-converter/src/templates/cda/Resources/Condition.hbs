@@ -1,0 +1,52 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Condition",
+        "id":"{{ID}}",
+        "identifier":
+        [
+            {{#each (toArray conditionEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "clinicalStatus": {
+            "coding": 
+            [
+              {{#each (toArray conditionEntry.entryRelationship)}}
+                  {{#each (toArray this.observation.templateId)}}
+                      {{#if (eq this.root '2.16.840.1.113883.10.20.22.4.6')}} 
+                          {{>DataType/Coding.hbs code=../this.observation.value}},
+                      {{/if}}
+                  {{/each}}
+              {{/each}}
+            ]
+        },
+        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
+        {{#if conditionEntry.effectiveTime.low.value}} 
+            "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}", 
+        {{else}}
+            "onsetAge":
+            [
+                {{#each (toArray conditionEntry.entryRelationship)}}
+                    {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.31')}} 
+                        "{{this.observation.value.value}}",
+                    {{/if}}
+                {{/each}}
+            ],
+        {{/if}}
+
+        "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.entryRelationship.observation.code}}],
+
+        {{! Missing meta}}
+        {{! Missing extension}}
+        {{! Missing recordedDate}}
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Condition/{{ID}}",
+    },
+},
+
+
+
+  

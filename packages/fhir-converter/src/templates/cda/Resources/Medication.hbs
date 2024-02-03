@@ -1,0 +1,12 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "Medication",
+        "id":"{{ID}}",
+        "code":{{>DataType/CodeableConcept.hbs code=medication.code}},
+    },
+    "request":{
+        "method":"PUT",
+        "url":"Medication/{{ID}}",
+    },
+},

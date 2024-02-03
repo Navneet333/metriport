@@ -1,0 +1,138 @@
+name: Deploy - Staging
+
+on:
+  push: # a commit to the specified branches, if any
+    branches:
+      - develop
+    paths:
+      - "packages/shared/**"
+      - "packages/api/**"
+      - "packages/api-sdk/**"
+      - "packages/commonwell-sdk/**"
+      - "packages/core/**"
+      - "packages/fhir-converter/**"
+      - "packages/ihe-gateway-sdk/**"
+      - "packages/carequality-sdk/**"
+      - "packages/infra/**"
+      - "packages/lambdas/**"
+  workflow_dispatch: # manually executed by a user
+
+jobs:
+  files-changed:
+    name: detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    # Map a step output to a job output
+    outputs:
+      api: ${{ steps.changes.outputs.api }}
+      fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
+      infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Detect Changes
+        uses: dorny/paths-filter@4067d885736b84de7c414f582ac45897079b0a78 # v2
+        id: changes
+        with:
+          filters: |
+            api:
+              - "packages/shared/**"
+              - "packages/api/**"
+              - "packages/api-sdk/**"
+              - "packages/commonwell-sdk/**"
+              - "packages/ihe-gateway-sdk/**"
+              - "packages/core/**"
+              - "package*.json"
+            # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
+            fhir-converter:
+              - "packages/fhir-converter/Dockerfile"
+              - "packages/fhir-converter/docker-entrypoint.sh"
+              - "packages/fhir-converter/package*.json"
+              - "packages/fhir-converter/mocha-config.json"
+              - "packages/fhir-converter/src/**"
+              - "packages/fhir-converter/test/**"
+              - "packages/fhir-converter/deploy/**"
+            infra-lambdas:
+              - "packages/shared/**"
+              - "packages/core/**"
+              - "packages/infra/**"
+              - "packages/lambdas/**"
+              - "package*.json"
+
+  api:
+    if: needs.files-changed.outputs.api == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_deploy_api.yml
+    with:
+      deploy_env: "staging"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  infra-api-lambdas:
+    uses: ./.github/workflows/_deploy_cdk.yml
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
+    needs: files-changed
+    with:
+      deploy_env: "staging"
+      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
+      cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
+      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  release:
+    uses: ./.github/workflows/_release.yml
+    needs: [api, infra-api-lambdas]
+    # run even if one of the dependencies didn't
+    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
+    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
+    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
+    secrets: inherit
+
+  e2e-tests:
+    uses: ./.github/workflows/_e2e-tests.yml
+    needs: release
+    # run even if one of the dependencies didn't
+    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
+    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
+    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
+    with:
+      deploy_env: "staging"
+      api_url: ${{ vars.API_URL_STAGING }}
+      fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
+      test_patient_id: ${{ vars.TEST_PATIENT_ID }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TEST_API_KEY: ${{ secrets.TEST_API_KEY_STAGING }}
+      TEST_ACC_ID: ${{ secrets.TEST_ACC_ID_STAGING }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE_STAGING }}
+      CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY_STAGING }}
+      CW_MEMBER_CERTIFICATE: ${{ secrets.CW_MEMBER_CERTIFICATE_STAGING }}
+      CW_MEMBER_PRIVATE_KEY: ${{ secrets.CW_MEMBER_PRIVATE_KEY_STAGING }}
+      CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME_STAGING }}
+      CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID_STAGING }}

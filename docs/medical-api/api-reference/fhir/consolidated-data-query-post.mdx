@@ -1,0 +1,155 @@
+---
+title: "Start Consolidated Data Query"
+description: "Trigger a consolidated data query for the given patient"
+api: "POST /medical/v1/patient/{id}/consolidated/query"
+---
+
+When executed, this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data from
+the FHIR repository.
+
+Once the data is consolidated and ready for consumption, a [Webhook request](/medical-api/more-info/webhooks#patient-consolidated-data)
+is sent to your configured URL containing the Patient's data in FHIR-compliant format, based on the filters used to trigger the query.
+
+You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
+
+This endpoint also provides the ability to render a medical record summary from the FHIR bundle as a PDF or HTML document.
+This will be returned [via a webook](/medical-api/more-info/webhooks#medical-record) as a FHIR bundle with a DocumentReference resource that will contain a url to retrieve the data from.
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Query Params
+
+<Tip>
+  You can optionally filter resources by date, using the `dateFrom` and `dateTo` query params. Note
+  that not all resources will support this filter - see the [FHIR R4
+  docs](https://www.hl7.org/fhir/R4/searchparameter-registry.html#clinical-date) for a list of
+  supported resources.
+</Tip>
+
+<Info>
+  Some general resources, like `Practitioner` do not belong to a specific patient - when you query
+  for these, all resources of that type will be returned.
+</Info>
+
+<ParamField query="resources" type="string" optional>
+  A comma separated, case sensitive list of resources to be returned. If none are provided all
+  resources will be included.
+</ParamField>
+
+<ParamField query="dateFrom" type="string" optional>
+  The start date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+  ISO 8601. If not provided, no start date filter will be applied.
+</ParamField>
+
+<ParamField query="dateTo" type="string" optional>
+  The end date (inclusive) for which to filter returned resources - formatted `YYYY-MM-DD` as per
+  ISO 8601. If not provided, no end date filter will be applied.
+</ParamField>
+
+<ParamField query="conversionType" type="string">
+  The doc type to convert to. Either `html` or `pdf`.
+
+  <Info>This parameter is to indicate how the medical record should be rendered.</Info>
+</ParamField>
+
+<Info>
+  You can scroll to the bottom of the page to view all [available
+  resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).
+</Info>
+
+## Body
+
+<Snippet file="webhook-request-metadata.mdx" />
+
+<Snippet file="webhook-metadata-post-example.mdx" />
+
+## Response
+
+Returns a JSON containing a `status` property indicating the query status. Possible values for consolidated
+data query status are `processing`, `completed`, or `failed`.
+
+<ResponseExample>
+
+<Snippet file="webhook-metadata-sdk-example.mdx" />
+
+</ResponseExample>
+
+```json
+{
+  "status": "processing"
+}
+```
+
+## Available FHIR resources
+
+This is the list of all available [FHIR resources](/medical-api/fhir/resources) you can query for:
+
+- [Account](/medical-api/fhir/resources/account)
+- [AdverseEvent](/medical-api/fhir/resources/adverseevent)
+- [AllergyIntolerance](/medical-api/fhir/resources/allergyintolerance)
+- [Appointment](/medical-api/fhir/resources/appointment)
+- [AppointmentResponse](/medical-api/fhir/resources/appointmentresponse)
+- [AuditEvent](/medical-api/fhir/resources/auditevent)
+- [Basic](/medical-api/fhir/resources/basic)
+- [BodyStructure](/medical-api/fhir/resources/bodystructure)
+- [CarePlan](/medical-api/fhir/resources/careplan)
+- [CareTeam](/medical-api/fhir/resources/careteam)
+- [ChargeItem](/medical-api/fhir/resources/chargeitem)
+- [Claim](/medical-api/fhir/resources/claim)
+- [ClaimResponse](/medical-api/fhir/resources/claimresponse)
+- [ClinicalImpression](/medical-api/fhir/resources/clinicalimpression)
+- [Communication](/medical-api/fhir/resources/communication)
+- [CommunicationRequest](/medical-api/fhir/resources/communicationrequest)
+- [Composition](/medical-api/fhir/resources/composition)
+- [Condition](/medical-api/fhir/resources/condition)
+- [Consent](/medical-api/fhir/resources/consent)
+- [Contract](/medical-api/fhir/resources/contract)
+- [Coverage](/medical-api/fhir/resources/coverage)
+- [CoverageEligibilityRequest](/medical-api/fhir/resources/coverageeligibilityrequest)
+- [CoverageEligibilityResponse](/medical-api/fhir/resources/coverageeligibilityresponse)
+- [DetectedIssue](/medical-api/fhir/resources/detectedissue)
+- [Device](/medical-api/fhir/resources/device)
+- [DeviceRequest](/medical-api/fhir/resources/devicerequest)
+- [DeviceUseStatement](/medical-api/fhir/resources/deviceusestatement)
+- [DiagnosticReport](/medical-api/fhir/resources/diagnosticreport)
+- [DocumentManifest](/medical-api/fhir/resources/documentmanifest)
+- [DocumentReference](/medical-api/fhir/resources/documentreference)
+- [Encounter](/medical-api/fhir/resources/encounter)
+- [EnrollmentRequest](/medical-api/fhir/resources/enrollmentrequest)
+- [EpisodeOfCare](/medical-api/fhir/resources/episodeofcare)
+- [ExplanationOfBenefit](/medical-api/fhir/resources/explanationofbenefit)
+- [FamilyMemberHistory](/medical-api/fhir/resources/familymemberhistory)
+- [Flag](/medical-api/fhir/resources/flag)
+- [Goal](/medical-api/fhir/resources/goal)
+- [GuidanceResponse](/medical-api/fhir/resources/guidanceresponse)
+- [ImagingStudy](/medical-api/fhir/resources/imagingstudy)
+- [Immunization](/medical-api/fhir/resources/immunization)
+- [ImmunizationEvaluation](/medical-api/fhir/resources/immunizationevaluation)
+- [ImmunizationRecommendation](/medical-api/fhir/resources/immunizationrecommendation)
+- [Invoice](/medical-api/fhir/resources/invoice)
+- [List](/medical-api/fhir/resources/list)
+- [MeasureReport](/medical-api/fhir/resources/measurereport)
+- [Media](/medical-api/fhir/resources/media)
+- [MedicationAdministration](/medical-api/fhir/resources/medicationadministration)
+- [MedicationDispense](/medical-api/fhir/resources/medicationdispense)
+- [MedicationRequest](/medical-api/fhir/resources/medicationrequest)
+- [MedicationStatement](/medical-api/fhir/resources/medicationstatement)
+- [MolecularSequence](/medical-api/fhir/resources/molecularsequence)
+- [NutritionOrder](/medical-api/fhir/resources/nutritionorder)
+- [Observation](/medical-api/fhir/resources/observation)
+- [Person](/medical-api/fhir/resources/person)
+- [Practitioner](/medical-api/fhir/resources/practitioner)
+- [Procedure](/medical-api/fhir/resources/procedure)
+- [Provenance](/medical-api/fhir/resources/provenance)
+- [QuestionnaireResponse](/medical-api/fhir/resources/questionnaireresponse)
+- [RelatedPerson](/medical-api/fhir/resources/relatedperson)
+- [RequestGroup](/medical-api/fhir/resources/requestgroup)
+- [ResearchSubject](/medical-api/fhir/resources/researchsubject)
+- [RiskAssessment](/medical-api/fhir/resources/riskassessment)
+- [ServiceRequest](/medical-api/fhir/resources/servicerequest)
+- [Specimen](/medical-api/fhir/resources/specimen)
+- [Task](/medical-api/fhir/resources/task)

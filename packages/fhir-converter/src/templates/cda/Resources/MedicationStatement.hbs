@@ -1,0 +1,43 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "MedicationStatement",
+        "id":"{{ID}}",
+        "identifier":
+  		[
+        	{{#each (toArray medicationStatement.id)}}
+            	{{>DataType/Identifier.hbs id=this}}
+            {{/each}}
+        ],
+        "status":{{>ValueSet/MedicationStatementStatus.hbs code=medicationStatement.statusCode.code}},
+        "effectivePeriod":
+        {
+            "start":"{{formatAsDateTime medicationStatement.effectiveTime.low.value}}",
+            "end":"{{formatAsDateTime medicationStatement.effectiveTime.high.value}}"
+        },
+        {{!-- https://www.hl7.org/fhir/R4/dosage.html#Dosage --}}
+        "dosage":
+        [
+            {
+                "text":"{{medicationStatement.text._}}",
+                "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
+                "doseAndRate": [
+                    {
+                        {{#with (extractRangeFromQuantity medicationStatement.doseQuantity) as |rangeObj|}}
+                            {{#if rangeObj.isValid}}
+                                "doseRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                            {{else}}
+                                "doseQuantity": {{>DataType/Quantity.hbs quantity=../medicationStatement.doseQuantity}},
+                            {{/if}}
+                        {{/with}}
+                    },
+                ],
+            },
+        ],
+        {{!-- not mapping precondition from CDA --}}
+    },
+    "request":{
+        "method":"PUT",
+        "url":"MedicationStatement/{{ID}}",
+    },
+},

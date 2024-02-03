@@ -1,0 +1,22 @@
+{
+    "fullUrl":"urn:uuid:{{ID}}",
+    "resource":{
+        "resourceType": "ServiceRequest",
+        "id":"{{ID}}",
+        
+        "identifier":
+        [
+        	{{#each (toArray serviceEntry.id)}}
+            	{{>DataType/Identifier.hbs id=this}},
+            {{/each}}
+        ],
+        "status":{{>ValueSet/RequestStatus.hbs code=serviceEntry.statusCode.code}},
+        "code":{{>DataType/CodeableConcept.hbs code=serviceEntry.code}},   
+        "priority":"{{serviceEntry.priorityCode.displayName}}",
+        "occuranceDateTime":"{{formatAsDateTime serviceEntry.effectiveTime.value}}",
+    },
+    "request":{
+        "method":"PUT",
+        "url":"ServiceRequest/{{ID}}",
+    },
+},

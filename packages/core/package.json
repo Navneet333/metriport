@@ -1,0 +1,95 @@
+{
+  "name": "@metriport/core",
+  "version": "1.9.0",
+  "private": true,
+  "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
+  "author": "Metriport Inc. <contact@metriport.com>",
+  "homepage": "https://metriport.com/",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./domain/*": "./dist/domain/*.js",
+    "./command/*": "./dist/command/*.js",
+    "./external/*": "./dist/external/*.js",
+    "./util/*": "./dist/util/*.js",
+    "./mpi/*": "./dist/mpi/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "/": [
+        "dist/index.d.ts"
+      ],
+      "domain/*": [
+        "dist/domain/*"
+      ],
+      "command/*": [
+        "dist/command/*"
+      ],
+      "external/*": [
+        "dist/external/*"
+      ],
+      "util/*": [
+        "dist/util/*"
+      ],
+      "mpi/*": [
+        "dist/mpi/*"
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "tsc": "tsc",
+    "watch": "tsc --watch",
+    "build": "tsc -p .",
+    "build:cloud": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "lint": "npx eslint . --ext .ts",
+    "lint-fix": "npm run lint --fix",
+    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
+    "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.435.0",
+    "@aws-sdk/s3-request-presigner": "^3.435.0",
+    "@metriport/api-sdk": "file:packages/api-sdk",
+    "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
+    "@opensearch-project/opensearch": "^2.3.1",
+    "aws-sdk": "^2.1243.0",
+    "dayjs": "^1.11.9",
+    "http-status": "^1.7.0",
+    "jaro-winkler": "^0.2.8",
+    "json-stringify-safe": "^5.0.1",
+    "lodash": "^4.17.21",
+    "playwright": "^1.39.0",
+    "xml2js": "^0.6.2",
+    "xmldom": "^0.6.0"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@medplum/fhirtypes": "^2.0.32",
+    "@tsconfig/recommended": "^1.0.2",
+    "@types/jest": "29.5.3",
+    "@types/json-stringify-safe": "^5.0.0",
+    "@types/xml2js": "^0.4.14",
+    "@types/xmldom": "^0.1.32",
+    "@typescript-eslint/eslint-plugin": "^5.48.2",
+    "@typescript-eslint/parser": "^5.48.2",
+    "eslint": "^8.32.0",
+    "eslint-config-prettier": "^8.6.0",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.3",
+    "ts-essentials": "^9.3.1",
+    "ts-jest": "29.1.1",
+    "typescript": "^4.9.5"
+  }
+}
